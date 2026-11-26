@@ -334,7 +334,21 @@ app.post('/api/sync/cancel', (req, res) => {
 // Serve native Android APK / iOS IPA downloads if downloads/ exists
 const downloadsDir = path.resolve(process.cwd(), 'downloads');
 if (fs.existsSync(downloadsDir)) {
-  app.use('/downloads', express.static(downloadsDir));
+  app.use(
+    '/downloads',
+    express.static(downloadsDir, {
+      setHeaders(res, filePath) {
+        const name = path.basename(filePath);
+        if (name.endsWith('.apk')) {
+          res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+        } else if (name.endsWith('.ipa')) {
+          res.setHeader('Content-Type', 'application/octet-stream');
+        }
+        res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
+        res.setHeader('Cache-Control', 'no-cache');
+      },
+    })
+  );
 }
 
 // Production static files serving if dist/ exists

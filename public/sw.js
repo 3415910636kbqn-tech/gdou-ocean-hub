@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gdou-ocean-hub-v6';
+const CACHE_NAME = 'gdou-ocean-hub-v7';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -20,8 +20,8 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
-  // Never cache /api/* requests
-  if (url.pathname.startsWith('/api/')) return;
+  // Never cache /api/* or /downloads/* requests
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/downloads/')) return;
   if (url.origin !== self.location.origin) return;
 
   // Network-first for HTML navigation so updates apply immediately, fallback to cache offline

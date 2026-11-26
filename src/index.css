@@ -1,0 +1,193 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Dynamic Theme Skin CSS Variables — instant switching with zero page refresh! */
+:root,
+:root[data-skin="ocean"] {
+  --skin-primary: #0284c7;
+  --skin-primary-hover: #0369a1;
+  --skin-primary-soft: rgba(14, 165, 233, 0.12);
+  --skin-primary-border: rgba(14, 165, 233, 0.3);
+  --skin-grad-from: #0284c7;
+  --skin-grad-via: #2563eb;
+  --skin-grad-to: #4f46e5;
+}
+
+:root[data-skin="morandi"] {
+  --skin-primary: #5f7d72;
+  --skin-primary-hover: #4c665d;
+  --skin-primary-soft: rgba(95, 125, 114, 0.14);
+  --skin-primary-border: rgba(95, 125, 114, 0.32);
+  --skin-grad-from: #5f7d72;
+  --skin-grad-via: #5e728a;
+  --skin-grad-to: #796b85;
+}
+
+:root[data-skin="sakura"] {
+  --skin-primary: #ec4899;
+  --skin-primary-hover: #db2777;
+  --skin-primary-soft: rgba(236, 72, 153, 0.12);
+  --skin-primary-border: rgba(236, 72, 153, 0.3);
+  --skin-grad-from: #ec4899;
+  --skin-grad-via: #f43f5e;
+  --skin-grad-to: #c026d3;
+}
+
+:root[data-skin="mono"] {
+  --skin-primary: #1e293b;
+  --skin-primary-hover: #0f172a;
+  --skin-primary-soft: rgba(30, 41, 59, 0.1);
+  --skin-primary-border: rgba(30, 41, 59, 0.25);
+  --skin-grad-from: #1e293b;
+  --skin-grad-via: #0f172a;
+  --skin-grad-to: #27272a;
+}
+
+.dark[data-skin="mono"] {
+  --skin-primary: #e2e8f0;
+  --skin-primary-hover: #cbd5e1;
+  --skin-primary-soft: rgba(226, 232, 240, 0.14);
+  --skin-primary-border: rgba(226, 232, 240, 0.28);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    overscroll-behavior-y: contain;
+  }
+  body {
+    font-family: "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  button,
+  a,
+  select,
+  input {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+}
+
+/* Theme utility classes backed by CSS variables */
+.skin-bg-primary {
+  background-color: var(--skin-primary);
+  transition: background-color 260ms cubic-bezier(0.22, 1, 0.36, 1), transform 120ms ease;
+}
+.skin-bg-primary:hover {
+  background-color: var(--skin-primary-hover);
+}
+.skin-bg-gradient {
+  background-image: linear-gradient(135deg, var(--skin-grad-from), var(--skin-grad-via), var(--skin-grad-to));
+  transition: background-image 300ms ease, filter 200ms ease, transform 120ms ease;
+}
+.skin-text-primary {
+  color: var(--skin-primary);
+  transition: color 240ms ease;
+}
+.skin-soft-pill {
+  background-color: var(--skin-primary-soft);
+  color: var(--skin-primary);
+  border-color: var(--skin-primary-border);
+  transition: background-color 240ms ease, color 240ms ease, border-color 240ms ease;
+}
+
+/* Silky Animations (GPU-composited transform + opacity only for 60fps!) */
+@keyframes tabEnter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes modalBackdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes toastSlideDown {
+  from {
+    opacity: 0;
+    transform: translate3d(-50%, -14px, 0) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(-50%, 0, 0) scale(1);
+  }
+}
+
+.animate-tab-enter {
+  animation: tabEnter 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+.animate-modal-backdrop {
+  animation: modalBackdropIn 180ms ease-out both;
+}
+
+.animate-modal-pop {
+  animation: modalPopIn 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+.animate-toast {
+  animation: toastSlideDown 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Silky horizontal swipe container */
+.swipe-pager {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+}
+.swipe-pager::-webkit-scrollbar {
+  display: none;
+}
+
+/* Subtle custom scrollbars for desktop */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-tab-enter,
+  .animate-modal-backdrop,
+  .animate-modal-pop,
+  .animate-toast {
+    animation: none !important;
+  }
+}

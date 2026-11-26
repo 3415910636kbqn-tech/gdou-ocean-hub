@@ -1,0 +1,39 @@
+{
+  "name": "gdou-ocean-hub",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "广东海洋大学本地零留存教务助手 — 课表、考试安排、成绩与绩点分析（免校园网校外微门户自适应）",
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c cyan,blue \"tsx watch server/index.ts\" \"vite\"",
+    "build": "tsc --noEmit && vite build",
+    "start": "tsx server/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.6.3",
+    "@capacitor/core": "^8.6.3",
+    "@capacitor/ios": "^8.6.3",
+    "crypto-js": "^4.2.0",
+    "express": "^5.1.0",
+    "lucide-react": "^0.511.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "recharts": "^2.15.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.6.3",
+    "@tailwindcss/vite": "^4.1.7",
+    "@types/crypto-js": "^4.2.2",
+    "@types/express": "^5.0.2",
+    "@types/node": "^22.15.18",
+    "@types/react": "^19.1.4",
+    "@types/react-dom": "^19.1.4",
+    "@vitejs/plugin-react": "^4.4.1",
+    "concurrently": "^9.1.2",
+    "tailwindcss": "^4.1.7",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  }
+}

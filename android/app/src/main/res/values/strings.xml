@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">谁用你那难用的教务系统？</string>
+    <string name="title_activity_main">谁用你那难用的教务系统？</string>
+    <string name="package_name">cn.gdou.oceanhub</string>
+    <string name="custom_url_scheme">cn.gdou.oceanhub</string>
+</resources>

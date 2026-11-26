@@ -1,0 +1,18 @@
+{
+  "name": "谁用你那难用的教务系统？",
+  "short_name": "谁用教务系统",
+  "description": "广东海洋大学本地零留存教务助手 — 课表、考试安排、绩点分析与校园工具",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#0284c7",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

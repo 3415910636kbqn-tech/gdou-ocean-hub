@@ -1,14 +1,19 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Calendar,
+  Check,
   Clock,
+  Copy,
   Database,
   Download,
+  ExternalLink,
   Image as ImageIcon,
+  Loader2,
   Palette,
   RefreshCcw,
   ShieldCheck,
   Smartphone,
+  Sparkles,
   Trash2,
   Upload,
 } from 'lucide-react';
@@ -19,6 +24,22 @@ import type {
   PersistedAppData,
   ThemeSkinKey,
 } from '../../shared/models';
+import {
+  ALTSTORE_INSTALL_URL,
+  ANDROID_APK_URL,
+  APP_BUILD,
+  APP_VERSION,
+  AppUpdateCheckResult,
+  checkAppUpdate,
+  detectClientPlatform,
+  FEATHER_ADD_SOURCE_URL,
+  IOS_ALTSTORE_SOURCE_URL,
+  IOS_IPA_URL,
+  isWeChatBrowser,
+  SIDESTORE_ADD_SOURCE_URL,
+  SIDESTORE_INSTALL_URL,
+  TROLLSTORE_INSTALL_URL,
+} from '../services/appDistribution';
 import { THEME_SKINS } from '../services/courseColors';
 import { isNativeMobileApp } from '../services/nativeHttpBridge';
 import { triggerTextDownload } from '../services/storage';
@@ -64,6 +85,38 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const bgInputRef = useRef<HTMLInputElement | null>(null);
+  const nativeApp = isNativeMobileApp();
+  const platform = detectClientPlatform();
+  const inWeChat = isWeChatBrowser();
+
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateResult, setUpdateResult] = useState<AppUpdateCheckResult | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [copiedSource, setCopiedSource] = useState(false);
+  const [showOtherPlatform, setShowOtherPlatform] = useState(false);
+
+  const handleCheckUpdate = async () => {
+    setCheckingUpdate(true);
+    setUpdateError(null);
+    try {
+      const res = await checkAppUpdate();
+      setUpdateResult(res);
+    } catch (err) {
+      setUpdateError(err instanceof Error ? err.message : '检查更新失败，请稍后重试');
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
+
+  const handleCopySourceUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(IOS_ALTSTORE_SOURCE_URL);
+      setCopiedSource(true);
+      window.setTimeout(() => setCopiedSource(false), 2000);
+    } catch {
+      window.prompt('复制 iOS 国内软件源地址：', IOS_ALTSTORE_SOURCE_URL);
+    }
+  };
   const periods = getActivePeriods(data.settings);
 
   const handleExportJson = () => {
@@ -279,36 +332,181 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       {/* Right Column: Native App Download, PWA, Audit & Backup */}
       <div className="space-y-5 lg:col-span-5">
-        {!isNativeMobileApp() && (
-          <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-teal-50/60 p-5 dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-teal-950/30">
-            <h3 className="flex items-center gap-2 text-sm font-bold text-emerald-950 dark:text-emerald-200">
-              <Download className="h-4 w-4 text-emerald-600" />
-              下载手机直连客户端（永不封 IP · 零中转）
-            </h3>
-            <p className="mt-1.5 text-xs leading-relaxed text-emerald-900/80 dark:text-emerald-200/80">
-              安装客户端后，请求直接从你自己的手机直连海大教务官网，完全不经过中转服务器，彻底告别 403 限流！
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <a
-                href="/downloads/gdou-schedule-android.apk"
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-500"
-              >
-                <Download className="h-3.5 w-3.5" />
-                Android APK
-              </a>
-              <a
-                href="/downloads/gdou-schedule-ios-unsigned.ipa"
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 dark:bg-slate-700"
-              >
-                <Download className="h-3.5 w-3.5" />
-                iOS IPA
-              </a>
+        {/* Smart Platform App Download & In-App Update Card */}
+        <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-teal-50/60 p-5 dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-teal-950/30">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h3 className="flex items-center gap-2 text-sm font-bold text-emerald-950 dark:text-emerald-200">
+                <Download className="h-4 w-4 text-emerald-600" />
+                {nativeApp ? '版本检查与直连更新' : '下载手机直连客户端（国内满速 · 永不封 IP）'}
+              </h3>
+              <p className="mt-1 text-[11px] text-emerald-800/80 dark:text-emerald-300/80">
+                当前版本 <strong>v{APP_VERSION}</strong> (Build {APP_BUILD}) ·{' '}
+                {nativeApp
+                  ? platform === 'ios'
+                    ? 'iOS 原生直连版'
+                    : 'Android 原生直连版'
+                  : platform === 'android'
+                    ? '已识别 Android 设备'
+                    : platform === 'ios'
+                      ? '已识别 iPhone / iPad'
+                      : '桌面浏览器'}
+              </p>
             </div>
-            <p className="mt-2 text-[10.5px] text-emerald-800/70 dark:text-emerald-300/70">
-              iOS 未签名 IPA 支持 AltStore / SideStore / Sideloadly / 轻松签 / TrollStore 自签安装
-            </p>
+            <button
+              type="button"
+              onClick={() => void handleCheckUpdate()}
+              disabled={checkingUpdate}
+              className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-emerald-300/80 bg-white/80 px-2.5 py-1.5 text-[11px] font-bold text-emerald-800 shadow-xs transition hover:bg-white disabled:opacity-60 dark:border-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-200"
+            >
+              {checkingUpdate ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              检查更新
+            </button>
           </div>
-        )}
+
+          {!nativeApp && (
+            <p className="mt-2 text-xs leading-relaxed text-emerald-900/80 dark:text-emerald-200/80">
+              安装客户端后，请求直接从你自己的手机直连海大教务官网，完全不经过中转服务器，彻底告别 403 限流；支持国内服务器满速直下。
+            </p>
+          )}
+
+          {inWeChat && !nativeApp && (
+            <div className="mt-2.5 rounded-xl border border-amber-300/80 bg-amber-50/90 px-3 py-2 text-[11px] font-medium text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+              检测到微信内置浏览器：请点右上角 <strong>···</strong> → 选择{' '}
+              <strong>「在浏览器打开」</strong> 即可满速下载安装包。
+            </div>
+          )}
+
+          {updateError && (
+            <div className="mt-2.5 rounded-xl bg-rose-50 px-3 py-2 text-[11px] text-rose-700 dark:bg-rose-950/50 dark:text-rose-300">
+              {updateError}
+            </div>
+          )}
+
+          {updateResult && (
+            <div className="mt-3 rounded-xl border border-emerald-200 bg-white/85 p-3 text-xs dark:border-emerald-800/70 dark:bg-slate-900/80">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-bold text-slate-900 dark:text-white">
+                  {updateResult.hasUpdate
+                    ? `发现新版本 v${updateResult.latestVersion} (Build ${updateResult.latestBuild})`
+                    : `已是最新版本 v${updateResult.latestVersion}`}
+                </span>
+                <span className="text-[10.5px] text-slate-500">{updateResult.releaseDate}</span>
+              </div>
+              {updateResult.highlights.length > 0 && (
+                <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-[11px] text-slate-600 dark:text-slate-300">
+                  {updateResult.highlights.slice(0, 4).map((item, idx) => (
+                    <li key={idx}>{item}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {/* Android Section */}
+          {(platform === 'android' || platform === 'desktop' || showOtherPlatform) && (
+            <div className="mt-3 space-y-1.5">
+              <a
+                href={updateResult?.androidUrl || (nativeApp ? ANDROID_APK_URL : '/downloads/gdou-schedule-android.apk')}
+                target={nativeApp ? '_blank' : undefined}
+                rel={nativeApp ? 'noreferrer' : undefined}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-500"
+              >
+                <Download className="h-3.5 w-3.5" />
+                下载 Android 正式签名 APK
+                {updateResult?.androidSizeLabel ? ` (${updateResult.androidSizeLabel})` : ''}
+              </a>
+              <p className="text-[10.5px] text-emerald-800/75 dark:text-emerald-300/75">
+                固定独立正式签名，后续发布新版本可直接覆盖安装、完整保留本地课表与设置。
+              </p>
+            </div>
+          )}
+
+          {/* iOS Section */}
+          {(platform === 'ios' || platform === 'desktop' || showOtherPlatform) && (
+            <div className="mt-3 space-y-2">
+              <a
+                href={updateResult?.iosUrl || (nativeApp ? IOS_IPA_URL : '/downloads/gdou-schedule-ios-unsigned.ipa')}
+                target={nativeApp ? '_blank' : undefined}
+                rel={nativeApp ? 'noreferrer' : undefined}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 dark:bg-slate-700"
+              >
+                <Download className="h-3.5 w-3.5" />
+                下载 iOS IPA（兼容 iOS 18+ 预签槽位）
+                {updateResult?.iosSizeLabel ? ` (${updateResult.iosSizeLabel})` : ''}
+              </a>
+
+              <div className="grid grid-cols-2 gap-1.5">
+                <a
+                  href={TROLLSTORE_INSTALL_URL}
+                  className="flex items-center justify-center gap-1 rounded-lg border border-slate-300/80 bg-white/90 px-2 py-1.5 text-[11px] font-semibold text-slate-800 transition hover:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  巨魔一键安装
+                </a>
+                <a
+                  href={SIDESTORE_INSTALL_URL}
+                  className="flex items-center justify-center gap-1 rounded-lg border border-slate-300/80 bg-white/90 px-2 py-1.5 text-[11px] font-semibold text-slate-800 transition hover:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  SideStore 直装
+                </a>
+                <a
+                  href={ALTSTORE_INSTALL_URL}
+                  className="flex items-center justify-center gap-1 rounded-lg border border-slate-300/80 bg-white/90 px-2 py-1.5 text-[11px] font-semibold text-slate-800 transition hover:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  AltStore 直装
+                </a>
+                <a
+                  href={FEATHER_ADD_SOURCE_URL}
+                  className="flex items-center justify-center gap-1 rounded-lg border border-slate-300/80 bg-white/90 px-2 py-1.5 text-[11px] font-semibold text-slate-800 transition hover:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  添加 Feather 源
+                </a>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <a
+                  href={SIDESTORE_ADD_SOURCE_URL}
+                  className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-emerald-300/70 bg-emerald-100/60 px-2 py-1.5 text-[10.5px] font-semibold text-emerald-900 transition hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200"
+                >
+                  添加 SideStore 源
+                </a>
+                <button
+                  type="button"
+                  onClick={() => void handleCopySourceUrl()}
+                  className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-emerald-300/70 bg-white/90 px-2 py-1.5 text-[10.5px] font-semibold text-emerald-900 transition hover:bg-white dark:border-emerald-800 dark:bg-slate-800 dark:text-emerald-200"
+                >
+                  {copiedSource ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                  {copiedSource ? '已复制软件源' : '复制国内软件源'}
+                </button>
+              </div>
+              <p className="text-[10.5px] text-emerald-800/75 dark:text-emerald-300/75">
+                国内高速软件源，兼容轻松签 / Feather / SideStore / AltStore / TrollStore 手机端直接安装与升级。
+              </p>
+            </div>
+          )}
+
+          {(platform === 'android' || platform === 'ios') && (
+            <button
+              type="button"
+              onClick={() => setShowOtherPlatform((v) => !v)}
+              className="mt-2.5 text-[11px] font-medium text-emerald-700 underline underline-offset-2 hover:text-emerald-900 dark:text-emerald-400"
+            >
+              {showOtherPlatform
+                ? '收起其他平台安装包'
+                : platform === 'android'
+                  ? '帮朋友找 iPhone / iOS 版？点击展开'
+                  : '帮朋友找 Android 版？点击展开'}
+            </button>
+          )}
+        </div>
 
         <div className="rounded-2xl border border-sky-200/80 bg-gradient-to-br from-sky-50 to-indigo-50/60 p-5 dark:border-sky-900/50 dark:from-sky-950/40 dark:to-indigo-950/30">
           <h3 className="flex items-center gap-2 text-sm font-bold text-sky-950 dark:text-sky-200">

@@ -1,4 +1,4 @@
-name: Build Mobile Apps (Android APK & iOS IPA)
+name: Build Mobile Apps (Android Release APK & iOS Ad-Hoc IPA)
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-android:
-    name: Build Android APK
+    name: Build Android Signed Release APK
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,13 +30,38 @@ jobs:
           npm run build
           npx cap sync android
 
-      - name: Build installable Android APK
+      - name: Prepare dedicated Release Keystore from GitHub Secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ] || [ -z "$ANDROID_STORE_PASSWORD" ] || [ -z "$ANDROID_KEY_ALIAS" ] || [ -z "$ANDROID_KEY_PASSWORD" ]; then
+            echo "ERROR: Missing Android Release signing secrets!"
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | tr -d '\r\n' | base64 -d > "$RUNNER_TEMP/gdou-release.p12"
+          echo "GDOU_RELEASE_STORE_FILE=$RUNNER_TEMP/gdou-release.p12" >> "$GITHUB_ENV"
+          echo "GDOU_RELEASE_STORE_PASSWORD=$ANDROID_STORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "GDOU_RELEASE_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "GDOU_RELEASE_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
+
+      - name: Build signed Release Android APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease --no-daemon
+          BUILT_APK="app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "$BUILT_APK" ]; then
+            echo "ERROR: Signed release APK not found at $BUILT_APK"
+            exit 1
+          fi
+          jarsigner -verify "$BUILT_APK"
           mkdir -p ../release-artifacts
-          cp app/build/outputs/apk/debug/app-debug.apk ../release-artifacts/gdou-schedule-android.apk
+          cp "$BUILT_APK" ../release-artifacts/gdou-schedule-android.apk
+          sha256sum ../release-artifacts/gdou-schedule-android.apk
+          ls -lh ../release-artifacts/gdou-schedule-android.apk
 
       - name: Upload Android APK artifact
         uses: actions/upload-artifact@v4
@@ -45,7 +70,7 @@ jobs:
           path: release-artifacts/gdou-schedule-android.apk
 
   build-ios:
-    name: Build iOS Unsigned IPA
+    name: Build iOS IPA (Ad-Hoc Pre-Signed for iOS 18+)
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -62,7 +87,7 @@ jobs:
           npm run build
           npx cap sync ios
 
-      - name: Build unsigned iOS .app & package .ipa
+      - name: Build iOS .app & package ad-hoc pre-signed .ipa
         working-directory: ios/App
         run: |
           xcodebuild \
@@ -70,14 +95,38 @@ jobs:
             -scheme App \
             -configuration Release \
             -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
             -derivedDataPath build \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM="" \
             clean build
+
+          APP_PATH="build/Build/Products/Release-iphoneos/App.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "ERROR: App.app not found!"
+            exit 1
+          fi
+
+          # Bottom-up ad-hoc sign all embedded frameworks/dylibs and the main App.app bundle
+          # so every Mach-O binary carries valid LC_CODE_SIGNATURE slots & _CodeSignature/CodeResources
+          # for rock-solid re-signing compatibility on iOS 18+ (Feather / ESign / SideStore / AltStore / TrollStore).
+          if [ -d "$APP_PATH/Frameworks" ]; then
+            find "$APP_PATH/Frameworks" -maxdepth 1 \( -name "*.framework" -o -name "*.dylib" \) -print0 | while IFS= read -r -d '' fw; do
+              echo "Ad-hoc signing embedded binary: $fw"
+              codesign --force --sign - --timestamp=none "$fw"
+            done
+          fi
+          codesign --force --sign - --timestamp=none "$APP_PATH"
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
+          rm -rf Payload
           mkdir -p Payload ../../release-artifacts
-          cp -R build/Build/Products/Release-iphoneos/App.app Payload/
+          cp -R "$APP_PATH" Payload/
           zip -qry ../../release-artifacts/gdou-schedule-ios-unsigned.ipa Payload
+          shasum -a 256 ../../release-artifacts/gdou-schedule-ios-unsigned.ipa
+          ls -lh ../../release-artifacts/gdou-schedule-ios-unsigned.ipa
 
       - name: Upload iOS IPA artifact
         uses: actions/upload-artifact@v4

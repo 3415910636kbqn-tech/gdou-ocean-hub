@@ -331,7 +331,7 @@ app.post('/api/sync/cancel', (req, res) => {
   res.json({ ok: true });
 });
 
-// Serve native Android APK / iOS IPA downloads if downloads/ exists
+// Serve native Android APK / iOS IPA downloads & AltStore/version JSON manifests
 const downloadsDir = path.resolve(process.cwd(), 'downloads');
 if (fs.existsSync(downloadsDir)) {
   app.use(
@@ -339,6 +339,17 @@ if (fs.existsSync(downloadsDir)) {
     express.static(downloadsDir, {
       setHeaders(res, filePath) {
         const name = path.basename(filePath);
+        if (name.endsWith('.json')) {
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Cache-Control', 'no-cache');
+          return;
+        }
+        if (name.endsWith('.png')) {
+          res.setHeader('Content-Type', 'image/png');
+          res.setHeader('Cache-Control', 'public, max-age=86400');
+          return;
+        }
         if (name.endsWith('.apk')) {
           res.setHeader('Content-Type', 'application/vnd.android.package-archive');
         } else if (name.endsWith('.ipa')) {

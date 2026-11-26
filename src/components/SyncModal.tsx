@@ -15,6 +15,11 @@ import {
 } from 'lucide-react';
 import { deriveCurrentTermParams } from '../../shared/gdouTimetable';
 import type { SyncResultPayload } from '../../shared/models';
+import {
+  detectClientPlatform,
+  SIDESTORE_INSTALL_URL,
+  TROLLSTORE_INSTALL_URL,
+} from '../services/appDistribution';
 import { encryptGdouPasswordInBrowser } from '../services/clientCrypto';
 import { DirectMobileSyncSession } from '../services/directGdouClient';
 import { isNativeMobileApp } from '../services/nativeHttpBridge';
@@ -611,24 +616,45 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose, onSyncCom
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
-            {!isNative && error.includes('403') && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                <a
-                  href="/downloads/gdou-schedule-android.apk"
-                  className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-rose-500"
-                >
-                  <Download className="h-3 w-3" />
-                  下载 Android 直连版 APK
-                </a>
-                <a
-                  href="/downloads/gdou-schedule-ios-unsigned.ipa"
-                  className="inline-flex items-center gap-1 rounded-lg bg-slate-800 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-slate-700"
-                >
-                  <Download className="h-3 w-3" />
-                  下载 iOS 直连版 IPA
-                </a>
-              </div>
-            )}
+            {!isNative && error.includes('403') && (() => {
+              const plat = detectClientPlatform();
+              return (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {plat !== 'ios' && (
+                    <a
+                      href="/downloads/gdou-schedule-android.apk"
+                      className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-rose-500"
+                    >
+                      <Download className="h-3 w-3" />
+                      下载 Android 正式版 APK
+                    </a>
+                  )}
+                  {plat !== 'android' && (
+                    <>
+                      <a
+                        href="/downloads/gdou-schedule-ios-unsigned.ipa"
+                        className="inline-flex items-center gap-1 rounded-lg bg-slate-800 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-slate-700"
+                      >
+                        <Download className="h-3 w-3" />
+                        下载 iOS 直连版 IPA
+                      </a>
+                      <a
+                        href={TROLLSTORE_INSTALL_URL}
+                        className="inline-flex items-center gap-1 rounded-lg bg-sky-700 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-sky-600"
+                      >
+                        巨魔直装
+                      </a>
+                      <a
+                        href={SIDESTORE_INSTALL_URL}
+                        className="inline-flex items-center gap-1 rounded-lg bg-indigo-700 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-indigo-600"
+                      >
+                        SideStore 直装
+                      </a>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
 

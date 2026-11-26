@@ -1,7 +1,7 @@
 import { isNativeMobileApp } from './nativeHttpBridge';
 
-export const APP_VERSION = '1.1.1';
-export const APP_BUILD = 3;
+export const APP_VERSION = '1.1.2';
+export const APP_BUILD = 4;
 
 export const PUBLIC_SERVER_ORIGIN = 'https://gdou.capqinal666888.online:8443';
 
@@ -99,9 +99,12 @@ export function formatBytes(bytes: number): string {
   return `${Math.round(bytes / 1024)} KB`;
 }
 
-export async function checkAppUpdate(): Promise<AppUpdateCheckResult> {
-  const baseUrl = isNativeMobileApp() ? APP_VERSION_MANIFEST_URL : '/downloads/version.json';
-  const resp = await fetch(`${baseUrl}?t=${Date.now()}`, { cache: 'no-store' });
+export async function checkAppUpdate(trigger: 'auto' | 'manual' = 'manual'): Promise<AppUpdateCheckResult> {
+  const native = isNativeMobileApp();
+  const platform = detectClientPlatform();
+  const baseUrl = native ? APP_VERSION_MANIFEST_URL : '/downloads/version.json';
+  const qs = `src=${native ? 'app' : 'web'}&p=${platform}&v=${encodeURIComponent(APP_VERSION)}&b=${APP_BUILD}&tr=${trigger}&t=${Date.now()}`;
+  const resp = await fetch(`${baseUrl}?${qs}`, { cache: 'no-store' });
   if (!resp.ok) {
     throw new Error(`检查更新失败 (HTTP ${resp.status})`);
   }

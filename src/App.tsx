@@ -4,12 +4,14 @@ import {
   CalendarClock,
   CalendarDays,
   Compass,
+  Download,
   Moon,
   RefreshCw,
   Settings,
   ShieldCheck,
   Sun,
   Waves,
+  X,
 } from 'lucide-react';
 import {
   getDefaultTermStartDateForTerm,
@@ -31,6 +33,11 @@ import { ScheduleView } from './components/ScheduleView';
 import { SettingsView } from './components/SettingsView';
 import { SyncModal } from './components/SyncModal';
 import { WebDownloadHome } from './components/WebDownloadHome';
+import {
+  AppUpdateCheckResult,
+  checkAppUpdate,
+  detectClientPlatform,
+} from './services/appDistribution';
 import { isNativeMobileApp } from './services/nativeHttpBridge';
 import {
   clearPersistedData,
@@ -64,6 +71,26 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const isNative = isNativeMobileApp();
   const [webPreviewEntered, setWebPreviewEntered] = useState(false);
+  const [availableUpdate, setAvailableUpdate] = useState<AppUpdateCheckResult | null>(null);
+  const [updateBannerDismissed, setUpdateBannerDismissed] = useState(false);
+
+  // Silent non-blocking update check on native App startup (GET /downloads/version.json, zero PII)
+  useEffect(() => {
+    if (!isNative) return;
+    let cancelled = false;
+    checkAppUpdate('auto')
+      .then((res) => {
+        if (!cancelled && res.hasUpdate) {
+          setAvailableUpdate(res);
+        }
+      })
+      .catch(() => {
+        /* ignore offline startup */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isNative]);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -354,6 +381,39 @@ export default function App() {
               </button>
             </div>
           </header>
+
+          {isNative && availableUpdate && !updateBannerDismissed && (
+            <div className="flex items-center justify-between gap-2 border-b border-emerald-200/80 bg-emerald-50/95 px-4 py-2 text-xs text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/70 dark:text-emerald-200 md:px-8">
+              <div className="flex min-w-0 items-center gap-2">
+                <Download className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span className="truncate font-semibold">
+                  发现新版本 v{availableUpdate.latestVersion}，覆盖安装不丢课表
+                </span>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <a
+                  href={
+                    detectClientPlatform() === 'ios'
+                      ? availableUpdate.iosUrl
+                      : availableUpdate.androidUrl
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-500"
+                >
+                  立即更新
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setUpdateBannerDismissed(true)}
+                  className="rounded-lg p-1 text-emerald-700/70 hover:bg-emerald-200/50 dark:text-emerald-300"
+                  aria-label="关闭更新提示"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
 
           <main className="flex-1 p-3 sm:p-4 md:p-8">
             <div key={activeTab} className="animate-tab-enter">

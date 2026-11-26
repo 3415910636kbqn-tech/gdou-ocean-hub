@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gdou-ocean-hub-v7';
+const CACHE_NAME = 'gdou-ocean-hub-v8';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

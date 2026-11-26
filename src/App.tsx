@@ -30,6 +30,8 @@ import { GradesView } from './components/GradesView';
 import { ScheduleView } from './components/ScheduleView';
 import { SettingsView } from './components/SettingsView';
 import { SyncModal } from './components/SyncModal';
+import { WebDownloadHome } from './components/WebDownloadHome';
+import { isNativeMobileApp } from './services/nativeHttpBridge';
 import {
   clearPersistedData,
   createSampleAppData,
@@ -60,6 +62,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('schedule');
   const [syncOpen, setSyncOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const isNative = isNativeMobileApp();
+  const [webPreviewEntered, setWebPreviewEntered] = useState(false);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -217,8 +221,32 @@ export default function App() {
     }));
   };
 
+  if (!isNative && !webPreviewEntered) {
+    return (
+      <WebDownloadHome
+        hasCachedWebData={data.courses.length > 0 || data.grades.length > 0 || data.exams.length > 0}
+        darkMode={data.settings.darkMode}
+        onToggleDarkMode={() => updateSettings({ darkMode: !data.settings.darkMode })}
+        onEnterWebPreview={() => setWebPreviewEntered(true)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 pb-20 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100 md:pb-0">
+      {/* Return-to-Download-Home ribbon when browsing web fallback */}
+      {!isNative && (
+        <div className="border-b border-rose-200/80 bg-rose-50/95 px-4 py-2 text-center text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/70 dark:text-rose-200">
+          <span>服务器 IP 已被尼海封禁，网页端仅作离线查看 · </span>
+          <button
+            type="button"
+            onClick={() => setWebPreviewEntered(false)}
+            className="font-extrabold underline underline-offset-2 hover:text-rose-950 dark:hover:text-white"
+          >
+            ← 返回下载直连 App 与安装教程
+          </button>
+        </div>
+      )}
       {/* Silky Floating Toast */}
       {toast && (
         <div className="animate-toast pointer-events-none fixed left-1/2 top-4 z-[60] rounded-full bg-slate-900/90 px-4 py-2 text-xs font-semibold text-white shadow-xl backdrop-blur-md dark:bg-white/95 dark:text-slate-900">

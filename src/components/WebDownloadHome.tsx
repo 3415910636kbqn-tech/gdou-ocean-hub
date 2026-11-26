@@ -80,7 +80,10 @@ export const WebDownloadHome: React.FC<WebDownloadHomeProps> = ({
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/85">
+      <header
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/85"
+      >
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2.5">
             <div className="skin-bg-gradient flex h-9 w-9 items-center justify-center rounded-xl text-white shadow-md">

@@ -249,7 +249,10 @@ export default function App() {
       )}
       {/* Silky Floating Toast */}
       {toast && (
-        <div className="animate-toast pointer-events-none fixed left-1/2 top-4 z-[60] rounded-full bg-slate-900/90 px-4 py-2 text-xs font-semibold text-white shadow-xl backdrop-blur-md dark:bg-white/95 dark:text-slate-900">
+        <div
+          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
+          className="animate-toast pointer-events-none fixed left-1/2 z-[60] rounded-full bg-slate-900/90 px-4 py-2 text-xs font-semibold text-white shadow-xl backdrop-blur-md dark:bg-white/95 dark:text-slate-900"
+        >
           {toast}
         </div>
       )}
@@ -316,7 +319,10 @@ export default function App() {
 
         {/* Main Content */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200/80 bg-white/85 px-4 py-3 backdrop-blur-xl transition-colors duration-300 dark:border-slate-800/80 dark:bg-slate-900/85 md:px-8">
+          <header
+            style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
+            className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200/80 bg-white/85 px-4 pb-3 backdrop-blur-xl transition-colors duration-300 dark:border-slate-800/80 dark:bg-slate-900/85 md:px-8"
+          >
             <div className="flex items-center gap-2.5">
               <div className="skin-bg-gradient flex h-8 w-8 items-center justify-center rounded-xl text-white md:hidden">
                 <Waves className="h-4 w-4" />
@@ -429,7 +435,10 @@ export default function App() {
       </div>
 
       {/* Mobile Bottom Tab Bar (5 tabs) */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-slate-200/90 bg-white/95 py-1.5 backdrop-blur-xl transition-colors duration-300 dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
+      <nav
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.375rem)' }}
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-slate-200/90 bg-white/95 pt-1.5 backdrop-blur-xl transition-colors duration-300 dark:border-slate-800 dark:bg-slate-900/95 md:hidden"
+      >
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = activeTab === item.key;

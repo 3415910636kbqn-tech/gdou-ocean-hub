@@ -1,7 +1,7 @@
 import { isNativeMobileApp } from './nativeHttpBridge';
 
-export const APP_VERSION = '1.1.2';
-export const APP_BUILD = 4;
+export const APP_VERSION = '1.1.3';
+export const APP_BUILD = 5;
 
 export const PUBLIC_SERVER_ORIGIN = 'https://gdou.capqinal666888.online:8443';
 

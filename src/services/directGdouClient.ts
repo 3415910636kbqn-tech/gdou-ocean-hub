@@ -152,6 +152,14 @@ function parseSelectedOption(html: string, selectId: string): string | null {
  * Pure on-device direct GDOU sync controller for Android APK & iOS IPA.
  * Every HTTP request leaves directly from the student's own phone IP to `*.gdou.edu.cn`.
  */
+function isUpstreamUnavailableStatus(status: number): boolean {
+  return status === 502 || status === 503 || status === 504;
+}
+
+function buildUpstreamUnavailableMsg(status: number): string {
+  return `海大官方微门户当前服务不可用（HTTP ${status}），属于学校服务器维护或波动，在校内可切校园网 Wi-Fi，校外请稍后再试`;
+}
+
 export class DirectMobileSyncSession {
   private jar = new NativeEphemeralCookieJar();
   public prepared: DirectPreparedSession | null = null;
@@ -181,6 +189,9 @@ export class DirectMobileSyncSession {
     });
     const netHtml = netResp.text();
     const isWebVpn = netResp.url.includes('wfw.gdou.edu.cn');
+    if (isUpstreamUnavailableStatus(netResp.status)) {
+      throw new Error(buildUpstreamUnavailableMsg(netResp.status));
+    }
     const jwBaseUrl = isWebVpn ? GDOU_JW_WFW_BASE : GDOU_JW_DIRECT_ORIGIN;
     const serviceUrl = isWebVpn
       ? `${GDOU_WFW_ORIGIN}/`
@@ -391,6 +402,9 @@ export class DirectMobileSyncSession {
       body: encodeFormBody({ xnm, xqm, kzlx: 'ck', xsdm: '' }),
     });
     const trimmed = resp.text().trim();
+    if (isUpstreamUnavailableStatus(resp.status)) {
+      throw new Error(buildUpstreamUnavailableMsg(resp.status));
+    }
     if (
       !resp.ok ||
       resp.status === 901 ||
@@ -684,6 +698,9 @@ export class DirectMobileSyncSession {
       method: 'GET',
       headers: { 'User-Agent': DEFAULT_DESKTOP_UA },
     });
+    if (isUpstreamUnavailableStatus(jwEntryResp.status)) {
+      throw new Error(buildUpstreamUnavailableMsg(jwEntryResp.status));
+    }
     const jwEntryHtml = jwEntryResp.text();
     let salt2 = extractHiddenInput(jwEntryHtml, 'pwdEncryptSalt');
     let exe2 = extractHiddenInput(jwEntryHtml, 'execution');
@@ -1133,6 +1150,9 @@ export class DirectMobileSyncSession {
           previousSteps: steps,
         };
         return { status: 'mfa_required', mfa: this.mfa };
+      }
+      if (isUpstreamUnavailableStatus(resp.status)) {
+        throw new Error(buildUpstreamUnavailableMsg(resp.status));
       }
       if (html.includes('pwdEncryptSalt')) {
         throw new Error(extractAuthError(html) || `校外教务子会话验证未通过 (HTTP ${resp.status})`);

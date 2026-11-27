@@ -158,6 +158,14 @@ function parseSelectedOption(html: string, selectId: string): string | null {
 const WFW_IP_BLOCKED_MSG =
   '海大微门户 (wfw.gdou.edu.cn) 当前限制了本服务器出口 IP（HTTP 403），因短时间内同步人数较多触发了学校防刷风控，请稍后再试或等待自动解封。';
 
+function isUpstreamUnavailableStatus(status: number): boolean {
+  return status === 502 || status === 503 || status === 504;
+}
+
+function buildUpstreamUnavailableMsg(status: number): string {
+  return `海大官方微门户当前服务不可用（HTTP ${status}），属于学校服务器维护或波动，在校内可切校园网 Wi-Fi，校外请稍后再试`;
+}
+
 export async function prepareSession(jar: EphemeralCookieJar): Promise<PreparedAuthSession> {
   const ephemeralBfp = generateSecureHex(16);
   const netResp = await jar.fetch(GDOU_ENTRY_URL, {
@@ -173,6 +181,9 @@ export async function prepareSession(jar: EphemeralCookieJar): Promise<PreparedA
   const isWebVpn = netResp.url.includes('wfw.gdou.edu.cn');
   if (isWebVpn && netResp.status === 403) {
     throw new Error(WFW_IP_BLOCKED_MSG);
+  }
+  if (isUpstreamUnavailableStatus(netResp.status)) {
+    throw new Error(buildUpstreamUnavailableMsg(netResp.status));
   }
   const jwBaseUrl = isWebVpn ? GDOU_JW_WFW_BASE : GDOU_JW_DIRECT_ORIGIN;
   const serviceUrl = isWebVpn
@@ -392,6 +403,9 @@ async function fetchScheduleJson(
   const trimmed = (await resp.text()).trim();
   if (resp.status === 403) {
     throw new Error(WFW_IP_BLOCKED_MSG);
+  }
+  if (isUpstreamUnavailableStatus(resp.status)) {
+    throw new Error(buildUpstreamUnavailableMsg(resp.status));
   }
   if (
     !resp.ok ||
